@@ -1,29 +1,110 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 
 export default function ResourcesPage() {
   const [topic, setTopic] = useState("");
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [notes, setNotes] = useState("");
 
-  const learningStyle = "Visual"; // change to test others
+  const learningStyle = "Reading"; // change to test others
+
+
+  // 🔹 Load voices properly
+  useEffect(() => {
+    speechSynthesis.getVoices();
+  }, []);
+
+  // 🔹 Clean text (removes markdown junk)
+  const cleanText = (text) => {
+    return text
+      .replace(/[#*`]/g, "")
+      .replace(/\n/g, " ")
+      .replace(/\s+/g, " ");
+  };
+
+  // 🔹 Speak function (IMPROVED)
+  const speak = (text) => {
+    const utterance = new SpeechSynthesisUtterance(cleanText(text));
+
+    const voices = speechSynthesis.getVoices();
+
+    // 🔥 Try to pick best voice available
+    const preferredVoice =
+      voices.find((v) => v.name.includes("Samantha")) || // Mac best
+      voices.find((v) => v.name.includes("Google")) ||
+      voices.find((v) => v.name.includes("Alex")) ||
+      voices[0];
+
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+
+    // 🔥 Better natural sound
+    utterance.rate = 0.9;
+    utterance.pitch = 1.05;
+    utterance.lang = "en-US";
+
+    speechSynthesis.cancel(); // stop previous
+    speechSynthesis.speak(utterance);
+  };
 
   const handleGenerate = async () => {
     if (!topic.trim()) return;
 
     setLoading(true);
     setResources([]);
+    setNotes("");
 
-    if (learningStyle === "Visual") {
-        const res = await fetch("/api/youtube", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic }),
-        });
+    try {
+        if (learningStyle === "Visual") {
+          const res = await fetch("/api/youtube", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ topic }),
+          });
+    
+          const data = await res.json();
+          setResources(data);
+        }
+    
+        if (learningStyle === "Reading") {
+          const res = await fetch("/api/generate-notes", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ topic }),
+          });
+    
+          const data = await res.json();
+          setNotes(data.notes);
+        }
 
-        const data = await res.json();
-        setResources(data);
+        if (learningStyle === "Auditory") {
+          const res = await fetch("/api/generate-audio", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ topic }),
+          });
+        
+          const data = await res.json();
+          setNotes(data.audioText);
+        }
+
+        if (learningStyle === "Kinesthetic") {
+          const res = await fetch("/api/generate-practice", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ topic }),
+          });
+        
+          const data = await res.json();
+          setNotes(data.tasks);
+        }
+    
+    } catch (error) {
+        console.error("Error:", error);
     }
 
     setLoading(false);
@@ -85,7 +166,7 @@ export default function ResourcesPage() {
         </div>
 
         {/* RESOURCE GRID */}
-        {loading && <p>Loading videos...</p>}
+        {loading && <p>Loading content...</p>}
 
         {learningStyle === "Visual" && resources.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -110,7 +191,50 @@ export default function ResourcesPage() {
             ))}
         </div>
         )}
+
+        {learningStyle === "Reading" && notes && (
+            <div className="bg-white p-6 rounded shadow whitespace-pre-wrap">
+                <ReactMarkdown>{notes}</ReactMarkdown>
+            </div>
+        )}
         
+        {learningStyle === "Auditory" && notes && (
+          <div className="bg-white p-6 rounded shadow">
+            <h2 className="text-xl font-semibold mb-4">
+              🎧 Lecture Explanation
+            </h2>
+
+            <div className="mb-4 whitespace-pre-wrap"><ReactMarkdown>{notes}</ReactMarkdown></div>
+
+            <button
+              onClick={() => speak(notes)}
+              className="bg-green-600 text-white px-4 py-2 rounded"
+            >
+              🔊 Listen
+            </button>
+
+            <button
+              onClick={() => speechSynthesis.cancel()}
+              className="ml-3 bg-red-500 text-white px-4 py-2 rounded"
+            >
+              Stop
+            </button>
+          </div>
+        )}
+
+        {learningStyle === "Kinesthetic" && notes && (
+          <div className="bg-white p-6 rounded shadow">
+            
+            <h2 className="text-xl font-semibold mb-4">
+              🧪 Practice Tasks
+            </h2>
+
+            <p className="whitespace-pre-wrap mb-4">
+            <ReactMarkdown>{notes}</ReactMarkdown>
+            </p>
+
+          </div>
+        )}
 
       </main>
     </div>

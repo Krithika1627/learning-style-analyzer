@@ -65,6 +65,13 @@ export default function Profile() {
             </Link>
 
             <Link
+              href="/analysis"
+              className="hover:text-blue-600"
+            >
+              Analysis
+            </Link>
+
+            <Link
               href="/result"
               className="hover:text-blue-600"
             >
