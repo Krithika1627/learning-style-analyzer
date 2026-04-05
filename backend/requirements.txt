@@ -3,3 +3,10 @@ uvicorn
 numpy
 scikit-learn
 pydantic
+sqlalchemy
+psycopg2-binary
+alembic
+spacy
+python-dotenv
+dateparser
+
