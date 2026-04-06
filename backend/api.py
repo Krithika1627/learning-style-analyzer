@@ -6,7 +6,7 @@ import numpy as np
 import pickle
 from datetime import datetime, timedelta
 from database import get_db, engine
-from models import Base, Task, ScheduleEntry
+from models import Base, Task, ScheduleEntry, Resource
 from nlp import parse_task_input
 from scheduler import recompute_schedule, get_weekly_schedule
 
@@ -47,6 +47,13 @@ class QuizInput(BaseModel):
 class TaskInput(BaseModel):
     text: str
 
+
+class ResourceInput(BaseModel):
+    topic: str
+    learning_style: str
+    content: str
+    type: str
+
 # --------------------------------------------
 # CALENDAR & TASK ENDPOINTS
 # --------------------------------------------
@@ -57,8 +64,16 @@ def add_task(input: TaskInput, db: Session = Depends(get_db)):
     NLP Parse → Store Task → Recompute Schedule
     """
     parsed = parse_task_input(input.text)
+
     if not parsed:
-        raise HTTPException(status_code=400, detail="Failed to parse task input")
+        # 🔥 fallback (VERY IMPORTANT)
+        parsed = {
+            "name": input.text,
+            "deadline": datetime.now() + timedelta(days=1),
+            "duration": 60,
+            "priority": "medium",
+            "difficulty": "medium"
+    }
     
     new_task = Task(
         name=parsed["name"],
@@ -104,7 +119,6 @@ def delete_task(task_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Task not found")
     db.delete(task)
     db.commit()
-    recompute_schedule(db)
     return {"message": "Task deleted"}
 
 @app.patch("/schedule/{entry_id}/complete")
@@ -115,6 +129,45 @@ def complete_task(entry_id: int, db: Session = Depends(get_db)):
     entry.status = "completed"
     db.commit()
     return {"message": "Task marked as completed"}
+
+
+@app.post("/resources")
+def save_resource(input: ResourceInput, db: Session = Depends(get_db)):
+    new_resource = Resource(
+        topic=input.topic,
+        learning_style=input.learning_style,
+        content=input.content,
+        type=input.type,
+    )
+    db.add(new_resource)
+    db.commit()
+    db.refresh(new_resource)
+
+    return {
+        "id": new_resource.id,
+        "topic": new_resource.topic,
+        "learning_style": new_resource.learning_style,
+        "content": new_resource.content,
+        "type": new_resource.type,
+        "created_at": new_resource.created_at,
+    }
+
+
+@app.get("/resources")
+def get_resources(db: Session = Depends(get_db)):
+    resources = db.query(Resource).order_by(Resource.created_at.desc(), Resource.id.desc()).all()
+
+    return [
+        {
+            "id": item.id,
+            "topic": item.topic,
+            "learning_style": item.learning_style,
+            "content": item.content,
+            "type": item.type,
+            "created_at": item.created_at,
+        }
+        for item in resources
+    ]
 
 
 # --------------------------------------------

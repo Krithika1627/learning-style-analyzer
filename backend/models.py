@@ -43,3 +43,14 @@ class ScheduleEntry(Base):
     status = Column(String, default="pending")
 
     task = relationship("Task", back_populates="schedule_entries")
+
+
+class Resource(Base):
+    __tablename__ = "resources"
+
+    id = Column(Integer, primary_key=True, index=True)
+    topic = Column(String, index=True)
+    learning_style = Column(String, index=True)
+    content = Column(String)
+    type = Column(String, index=True)
+    created_at = Column(DateTime, server_default="now()")

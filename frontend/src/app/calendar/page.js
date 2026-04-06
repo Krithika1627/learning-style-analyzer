@@ -1,216 +1,121 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { format, startOfWeek, addDays, startOfDay, addHours, addWeeks, subWeeks } from 'date-fns';
+import { useEffect, useMemo, useState } from "react";
+import {
+  addMonths,
+  endOfMonth,
+  endOfWeek,
+  format,
+  isSameMonth,
+  startOfMonth,
+  startOfWeek,
+  subMonths,
+} from "date-fns";
+import { useAppContext } from "@/app/context/AppContext";
 
 export default function CalendarPage() {
-  const [taskInput, setTaskInput] = useState("");
-  const [schedule, setSchedule] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [currentWeekStart, setCurrentWeekStart] = useState(
-    startOfWeek(new Date(), { weekStartsOn: 1 })
-  );
-
-  const hours = Array.from({ length: 24 }, (_, i) => i);
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
-
-  // Colors for priority
-  const priorityColors = {
-    high: 'bg-red-100 border-red-300 text-red-800',
-    medium: 'bg-yellow-100 border-yellow-300 text-yellow-800',
-    low: 'bg-green-100 border-green-300 text-green-800',
-  };
-
-  const fetchSchedule = async () => {
-    try {
-      const response = await fetch(`http://localhost:8000/schedule?start_date=${currentWeekStart.toISOString()}`);
-      if (response.ok) {
-        const data = await response.json();
-        setSchedule(data);
-      }
-    } catch (err) {
-      console.error("Failed to fetch schedule:", err);
-    }
-  };
+  const { studySessions, fetchSchedule, loading, error } = useAppContext();
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
   useEffect(() => {
-    fetchSchedule();
-  }, [currentWeekStart]);
+    fetchSchedule(currentMonth.toISOString()).catch(() => {});
+  }, [currentMonth, fetchSchedule]);
 
-  const handlePrevWeek = () => setCurrentWeekStart(subWeeks(currentWeekStart, 1));
-  const handleNextWeek = () => setCurrentWeekStart(addWeeks(currentWeekStart, 1));
-  const handleToday = () => setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const groupedSessions = useMemo(() => {
+    return studySessions.reduce((acc, session) => {
+      if (!acc[session.date]) {
+        acc[session.date] = [];
+      }
 
-  const handleDeleteTask = async (taskId) => {
-    if (!confirm("Are you sure you want to delete this task?")) return;
-    try {
-      const response = await fetch(`http://localhost:8000/tasks/${taskId}`, { method: 'DELETE' });
-      if (response.ok) fetchSchedule();
-    } catch (err) {
-      console.error("Failed to delete task:", err);
-    }
-  };
+      acc[session.date].push(session);
+      return acc;
+    }, {});
+  }, [studySessions]);
 
-  const handleCompleteTask = async (entryId) => {
-    try {
-      const response = await fetch(`http://localhost:8000/schedule/${entryId}/complete`, { method: 'PATCH' });
-      if (response.ok) fetchSchedule();
-    } catch (err) {
-      console.error("Failed to complete task:", err);
-    }
-  };
+  const startDate = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 0 });
+  const endDate = endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 0 });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!taskInput.trim()) return;
+  const days = [];
+  let day = startDate;
 
-    setLoading(true);
-    setError("");
-    try {
-      const response = await fetch("http://localhost:8000/tasks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: taskInput }),
-      });
-
-      if (!response.ok) throw new Error("Failed to add task");
-      
-      setTaskInput("");
-      fetchSchedule(); // Refresh
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getTaskForSlot = (day, hour) => {
-    const slotTime = addHours(startOfDay(day), hour);
-    // Find entry where start_time (ISO string) matches
-    return schedule.find(entry => {
-        const entryStart = new Date(entry.start_time);
-        return entryStart.getTime() === slotTime.getTime();
-    });
-  };
+  while (day <= endDate) {
+    days.push(day);
+    day = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1);
+  }
 
   return (
-    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-        <h1 className="text-3xl font-bold text-gray-900">Weekly Schedule</h1>
-        
-        <div className="flex items-center bg-white rounded-lg shadow-sm border p-1 shrink-0">
-          <button 
-            onClick={handlePrevWeek}
-            className="p-2 hover:bg-gray-100 rounded-md text-gray-600 transition-colors"
-            title="Previous Week"
-          >
-            ←
-          </button>
-          <button 
-            onClick={handleToday}
-            className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-          >
-            Current Week
-          </button>
-          <button 
-            onClick={handleNextWeek}
-            className="p-2 hover:bg-gray-100 rounded-md text-gray-600 transition-colors"
-            title="Next Week"
-          >
-            →
-          </button>
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-lg shadow-black/20">
+        <div className="mb-6 flex items-center justify-between">
+          <h1 className="text-2xl font-semibold text-white">Study Calendar</h1>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setCurrentMonth((prev) => subMonths(prev, 1))}
+              className="rounded-lg border border-slate-600 px-3 py-1.5 text-slate-200 hover:bg-slate-800"
+            >
+              Prev
+            </button>
+            <p className="min-w-40 text-center text-slate-200">{format(currentMonth, "MMMM yyyy")}</p>
+            <button
+              onClick={() => setCurrentMonth((prev) => addMonths(prev, 1))}
+              className="rounded-lg border border-slate-600 px-3 py-1.5 text-slate-200 hover:bg-slate-800"
+            >
+              Next
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* NLP Input */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border mb-8">
-        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4">
-          <input
-            type="text"
-            className="flex-grow p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-            placeholder="e.g., Finish project by Friday 5pm high priority"
-            value={taskInput}
-            onChange={(e) => setTaskInput(e.target.value)}
-            disabled={loading}
-          />
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-blue-300 transition-all flex items-center justify-center gap-2"
-            disabled={loading}
-          >
-            {loading ? <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> : null}
-            Add Task
-          </button>
-        </form>
-        {error && <p className="text-red-500 mt-2 text-sm">{error}</p>}
-        <p className="text-xs text-gray-500 mt-3 italic">
-          Try: "Study Math for 2 hours before Sunday" or "Gym tomorrow 8am low priority"
-        </p>
-      </div>
+        <div className="mb-3 grid grid-cols-7 gap-2 text-center text-xs uppercase tracking-wide text-slate-400">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((name) => (
+            <p key={name}>{name}</p>
+          ))}
+        </div>
 
-      {/* Calendar Grid */}
-      <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
-        <div className="min-w-[800px]">
-          <div className="grid grid-cols-8 border-b">
-            {/* Time column header */}
-            <div className="p-4 border-r bg-gray-50 font-semibold text-gray-500 text-sm">Time</div>
-            {/* Day headers */}
-            {weekDays.map((day, i) => (
-              <div key={i} className="p-4 text-center border-r last:border-r-0 bg-gray-50">
-                <p className="text-sm font-semibold text-gray-900">{format(day, 'EEE')}</p>
-                <p className="text-xs text-gray-500">{format(day, 'MMM d')}</p>
+        <div className="grid grid-cols-7 gap-2">
+          {days.map((date) => {
+            const key = format(date, "yyyy-MM-dd");
+            const sessionsForDay = groupedSessions[key] || [];
+            const isCurrentMonth = isSameMonth(date, currentMonth);
+
+            return (
+              <div
+                key={key}
+                className={`min-h-28 rounded-xl border p-2 ${
+                  isCurrentMonth
+                    ? "border-slate-700 bg-slate-900/50"
+                    : "border-slate-800 bg-slate-900/20"
+                }`}
+              >
+                <p className={`text-sm ${isCurrentMonth ? "text-white" : "text-slate-500"}`}>
+                  {format(date, "d")}
+                </p>
+
+                {sessionsForDay.length > 0 ? (
+                  <div className="mt-2 space-y-1">
+                    {sessionsForDay.slice(0, 2).map((session) => (
+                      <div
+                        key={session.id}
+                        className={`rounded px-2 py-1 text-xs ${
+                          session.status === "completed"
+                            ? "bg-emerald-800/30 text-emerald-200"
+                            : "bg-accent/20 text-indigo-200"
+                        }`}
+                      >
+                        {session.title}
+                      </div>
+                    ))}
+                    {sessionsForDay.length > 2 ? (
+                      <p className="text-xs text-slate-400">+{sessionsForDay.length - 2} more</p>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-8">
-            {hours.map((hour) => (
-              <>
-                {/* Time Label */}
-                <div key={`time-${hour}`} className="p-2 border-r border-b text-xs text-secondary-500 text-right h-12 flex items-start justify-end sticky left-0 bg-white">
-                  {hour === 0 ? '12 AM' : hour <= 12 ? `${hour} AM` : `${hour - 12} PM`}
-                </div>
-                
-                {weekDays.map((day, i) => {
-                  const task = getTaskForSlot(day, hour);
-                  return (
-                    <div 
-                      key={`${i}-${hour}`} 
-                      className="border-r border-b h-12 bg-white relative group"
-                    >
-                      {task && (
-                        <div className={`absolute inset-1 p-1 rounded border text-[10px] leading-tight flex flex-col justify-center overflow-hidden z-10 transition-all ${priorityColors[task.priority] || 'bg-blue-50 border-blue-200'} ${task.status === 'completed' ? 'opacity-50 line-through' : ''}`}>
-                          <div className="flex justify-between items-start mb-0.5">
-                            <span className="font-bold truncate pr-3">{task.task_name}</span>
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); handleDeleteTask(task.task_id); }}
-                              className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-600 transition-opacity bg-white/50 rounded p-0.5"
-                              title="Delete Task"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                          <div className="flex justify-between items-center mt-auto">
-                            <span className="opacity-70 uppercase text-[8px]">{task.priority}</span>
-                            {task.status !== 'completed' && (
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); handleCompleteTask(task.id); }}
-                                className="bg-white/80 hover:bg-white text-gray-700 px-1 py-0.5 rounded border border-gray-200 text-[8px] font-bold shadow-sm"
-                              >
-                                Done
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </>
-            ))}
-          </div>
+            );
+          })}
         </div>
+
+        {loading ? <p className="mt-4 text-sm text-slate-300">Loading schedule...</p> : null}
+        {error ? <p className="mt-2 text-sm text-rose-300">{error}</p> : null}
       </div>
     </div>
   );

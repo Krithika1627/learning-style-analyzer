@@ -1,45 +1,37 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import Navbar from "@/app/components/Navbar";
-
+import { questions } from "../questions";
 
 export default function InstructionsPage() {
   const router = useRouter();
 
   const handleStart = () => {
-    router.push("/assessment"); 
+    router.push("/assessment/questions");
   };
 
   return (
-    <>
-      <Navbar />
-
-      <div className="p-8 max-w-3xl mx-auto text-center">
-        <h1 className="text-3xl font-bold mb-4">Assessment Instructions</h1>
-        <p className="mb-6 text-left">
-          Welcome to the Learning Style Assessment! Please read the instructions carefully before starting:
+    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="rounded-2xl border border-border bg-card p-8 shadow-lg shadow-black/20">
+        <h1 className="mb-4 text-3xl font-semibold text-white">Assessment Instructions</h1>
+        <p className="mb-6 text-slate-300">
+          Read each question and choose the option that best reflects how you naturally learn.
         </p>
 
-        <ul className="list-disc text-left mb-6 ml-6 space-y-2">
-          <li>There are 15 questions in total.</li>
-          <li>Answer each question honestly.</li>
-          <li>Make sure to answer all questions before submitting.</li>
-          <li>
-            Your responses will determine your learning style (Visual, Auditory,
-            Reading/Writing, Kinesthetic).
-          </li>
-          <li>Click the "Start Assessment" button when ready.</li>
+        <ul className="mb-8 list-disc space-y-2 pl-5 text-slate-300">
+          <li>There are {questions.length} questions in total.</li>
+          <li>Answer honestly based on your real study behavior.</li>
+          <li>Complete all questions to generate an accurate VARK analysis.</li>
+          <li>You will see your analysis, results, and personalized resources after submission.</li>
         </ul>
 
         <button
           onClick={handleStart}
-          className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          className="rounded-xl bg-accent px-6 py-3 font-semibold text-white transition hover:bg-indigo-500"
         >
           Start Assessment
         </button>
       </div>
-    </>
+    </div>
   );
-
 }

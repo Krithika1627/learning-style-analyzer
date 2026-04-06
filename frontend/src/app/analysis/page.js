@@ -1,79 +1,88 @@
 "use client";
 
+import Link from "next/link";
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
   Tooltip,
-  Legend,
-} from "chart.js";
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
+import { useAppContext } from "@/app/context/AppContext";
 
-import { Bar } from "react-chartjs-2";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Tooltip,
-  Legend
-);
+const LABELS = ["Visual", "Auditory", "Read/Write", "Kinesthetic"];
 
 export default function AnalysisPage() {
+  const { result } = useAppContext();
 
-  const data = {
-    labels: ["Visual", "Auditory", "Reading", "Kinesthetic"],
-    datasets: [
-      {
-        label: "Learning Style %",
-        data: [40, 25, 20, 15],
-      },
-    ],
-  };
+  const chartData = LABELS.map((name) => ({
+    name,
+    score: Number(result?.[name] ?? 0),
+  }));
 
-  const options = {
-    responsive: true,
-    scales: {
-      y: {
-        min: 0,
-        max: 100,
-      },
-    },
-  };
+  const total = chartData.reduce((sum, item) => sum + item.score, 0);
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mb-6 rounded-2xl border border-border bg-card p-6 shadow-lg shadow-black/20">
+        <h1 className="text-3xl font-semibold text-white">Learning Style Analysis</h1>
+        <p className="mt-2 text-slate-300">
+          Dynamic score distribution across all VARK categories.
+        </p>
+      </div>
 
-      {/* SIDEBAR */}
-      <aside className="w-64 bg-white shadow-md p-6 hidden md:block">
-        <h2 className="text-xl font-bold mb-6">Learning Hub</h2>
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-lg shadow-black/20">
+        {total === 0 ? (
+          <div className="rounded-xl border border-dashed border-slate-600 bg-slate-900/40 p-8 text-center">
+            <p className="text-slate-300">No assessment data found yet.</p>
+            <Link href="/assessment/instructions" className="mt-4 inline-block rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500">
+              Start Assessment
+            </Link>
+          </div>
+        ) : (
+          <>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                  <XAxis dataKey="name" stroke="#94a3b8" tick={{ fill: "#cbd5e1", fontSize: 12 }} />
+                  <YAxis allowDecimals={false} stroke="#94a3b8" tick={{ fill: "#cbd5e1", fontSize: 12 }} />
+                  <Tooltip
+                    cursor={{ fill: "#1e293b" }}
+                    contentStyle={{
+                      backgroundColor: "#0f172a",
+                      borderColor: "#334155",
+                      color: "#e2e8f0",
+                      borderRadius: "12px",
+                    }}
+                  />
+                  <Bar dataKey="score" fill="#6366f1" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
 
-        <nav className="flex flex-col gap-4 text-gray-700">
-          <a href="/profile" className="hover:text-blue-600">Dashboard</a>
-          <a href="/assessment" className="hover:text-blue-600">Assessment</a>
-          <a href="/resources" className="hover:text-blue-600">Resources</a>
-          <a href="/analysis" className="text-blue-600 font-semibold">Analysis</a>
-          <a href="/result" className="hover:text-blue-600">Results</a>
-        </nav>
-      </aside>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {chartData.map((item) => (
+                <div key={item.name} className="rounded-xl border border-slate-700 bg-slate-900/50 p-4">
+                  <p className="text-xs uppercase tracking-wider text-slate-400">{item.name}</p>
+                  <p className="mt-2 text-2xl font-semibold text-white">{item.score}</p>
+                </div>
+              ))}
+            </div>
 
-      {/* MAIN */}
-      <main className="flex-1 p-8">
-
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">
-            📊 Learning Style Analysis
-          </h1>
-          <p className="text-gray-600">
-            Percentage distribution based on assessment responses.
-          </p>
-        </div>
-
-        <div className="bg-white p-8 rounded-lg shadow">
-          <Bar data={data} options={options} />
-        </div>
-
-      </main>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link href="/results" className="rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500">
+                View Results
+              </Link>
+              <Link href="/resources" className="rounded-xl border border-slate-600 px-5 py-2.5 text-sm font-medium text-slate-200 hover:bg-slate-800">
+                Open Resources
+              </Link>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

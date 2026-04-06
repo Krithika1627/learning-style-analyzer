@@ -1,7 +1,8 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
-import Navbar from "../components/Navbar";
+import Navbar from "@/app/components/Navbar";
+import { AppProvider } from "@/app/context/AppContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,22 +16,24 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: "Learning Style Analyzer",
-  description: "AI based learing platform",
+  description: "AI-based platform to analyze and improve study patterns",
 };
 
 export default function RootLayout({ children }) {
   return (
     <ClerkProvider>
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <Navbar />
-        <main className="min-h-screen bg-gray-50">
-          {children}
-        </main>
-      </body>
-    </html>
+      <html lang="en">
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        >
+          <AppProvider>
+            <Navbar />
+            <main className="min-h-screen bg-background text-foreground pt-20">
+              {children}
+            </main>
+          </AppProvider>
+        </body>
+      </html>
     </ClerkProvider>
   );
 }

@@ -2,6 +2,10 @@
 const nextConfig = {
   /* config options here */
   reactCompiler: true,
+  images: {
+    domains: ["img.clerk.com"],
+  },
 };
 
 export default nextConfig;
+
