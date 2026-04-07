@@ -35,22 +35,40 @@ const [selectedResource, setSelectedResource] = useState(null);
     return "Hands-on practice tasks generated to learn by doing.";
   }, [style]);
 
-  const speak = (text) => {
-    if (!text) return;
+  const cleanText = (text) => {
+  return text
+    .replace(/[#*`]/g, "")
+    .replace(/\n/g, " ");
+  };
 
+  const speak = (text) => {
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.95;
+
+    const voices = speechSynthesis.getVoices();
+
+    // 🔥 pick a better voice
+    const preferredVoice = voices.find(
+      (voice) =>
+        voice.name.includes("Google") || 
+        voice.name.includes("Samantha") ||
+        voice.name.includes("Alex")
+    );
+
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+
+    utterance.rate = 0.9;
     utterance.pitch = 1;
     utterance.lang = "en-US";
 
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
+    speechSynthesis.cancel();
+    speechSynthesis.speak(utterance);
   };
 
   const stopSpeaking = () => {
-    window.speechSynthesis.cancel();
-  };
-
+  speechSynthesis.cancel();
+};
   const fetchSavedResources = async () => {
     setSavedLoading(true);
     setSavedError("");
@@ -235,7 +253,7 @@ const [selectedResource, setSelectedResource] = useState(null);
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => speak(notes)}
+                  onClick={() => speak(cleanText(notes))}
                   className="rounded-lg bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-500"
                 >
                   Listen
