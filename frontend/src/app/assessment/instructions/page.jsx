@@ -19,7 +19,7 @@ export default function InstructionsPage() {
         </p>
 
         <ul className="mb-8 list-disc space-y-2 pl-5 text-slate-300">
-          <li>There are {questions.length} questions in total.</li>
+          <li>There are 15 questions in total.</li>
           <li>Answer honestly based on your real study behavior.</li>
           <li>Complete all questions to generate an accurate VARK analysis.</li>
           <li>You will see your analysis, results, and personalized resources after submission.</li>

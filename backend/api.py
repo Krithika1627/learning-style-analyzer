@@ -2,6 +2,8 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from sqlalchemy import text, inspect
+from typing import Optional
 import numpy as np
 import pickle
 from datetime import datetime, timedelta
@@ -12,6 +14,29 @@ from scheduler import recompute_schedule, get_weekly_schedule
 
 # Initialize tables (optional if using Alembic)
 Base.metadata.create_all(bind=engine)
+
+# Ensure tracker metadata columns exist
+def ensure_tracker_columns():
+    """Add tracker metadata columns if they don't exist"""
+    try:
+        with engine.connect() as conn:
+            inspector = inspect(engine)
+            schedule_cols = [col['name'] for col in inspector.get_columns('schedule')]
+            required = ['energy', 'distraction', 'mood', 'notes']
+            missing = [c for c in required if c not in schedule_cols]
+            
+            if missing:
+                for col in missing:
+                    col_type = 'TEXT' if col == 'notes' else 'INTEGER'
+                    try:
+                        conn.execute(text(f"ALTER TABLE schedule ADD COLUMN {col} {col_type}"))
+                    except:
+                        pass
+                conn.commit()
+    except Exception as e:
+        pass
+
+ensure_tracker_columns()
 
 # --------------------------------------------
 # LOAD TRAINED MODEL
@@ -47,6 +72,15 @@ class QuizInput(BaseModel):
 class TaskInput(BaseModel):
     text: str
 
+class SessionInput(BaseModel):
+    title: str
+    duration: int
+    date: str
+    start_time: str = "09:00"
+    energy: Optional[int] = None
+    distraction: Optional[int] = None
+    mood: Optional[int] = None
+    notes: Optional[str] = None
 
 class ResourceInput(BaseModel):
     topic: str
@@ -92,6 +126,58 @@ def add_task(input: TaskInput, db: Session = Depends(get_db)):
     recompute_schedule(db)
     
     return {"message": "Task added and schedule updated", "task": parsed}
+
+@app.post("/sessions")
+def add_study_session(input: SessionInput, db: Session = Depends(get_db)):
+    """
+    Add study session with tracker metadata (energy, distraction, mood, notes).
+    This preserves all the tracker data for analytics.
+    """
+    try:
+        # Create task
+        deadline = datetime.fromisoformat(input.date) + timedelta(days=1)
+        new_task = Task(
+            name=input.title,
+            deadline=deadline,
+            duration=input.duration,
+            priority="medium",
+            difficulty="medium"
+        )
+        db.add(new_task)
+        db.flush()
+        
+        # Parse date and time
+        date_obj = datetime.fromisoformat(input.date)
+        time_parts = input.start_time.split(":")
+        start_dt = date_obj.replace(
+            hour=int(time_parts[0]),
+            minute=int(time_parts[1]) if len(time_parts) > 1 else 0
+        )
+        end_dt = start_dt + timedelta(minutes=input.duration)
+        
+        # Create schedule entry WITH tracker metadata
+        schedule_entry = ScheduleEntry(
+            task_id=new_task.id,
+            start_time=start_dt,
+            end_time=end_dt,
+            status="pending",
+            energy=input.energy,
+            distraction=input.distraction,
+            mood=input.mood,
+            notes=input.notes
+        )
+        db.add(schedule_entry)
+        db.commit()
+        db.refresh(schedule_entry)
+        
+        return {
+            "id": schedule_entry.id,
+            "task_id": new_task.id,
+            "message": "Session saved"
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/schedule")
 def get_schedule(start_date: str = None, db: Session = Depends(get_db)):

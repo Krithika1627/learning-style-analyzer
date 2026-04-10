@@ -41,6 +41,11 @@ class ScheduleEntry(Base):
     start_time = Column(DateTime, index=True)
     end_time = Column(DateTime)
     status = Column(String, default="pending")
+    # Tracker metadata for analysis
+    energy = Column(Integer, nullable=True)  # 1-5
+    distraction = Column(Integer, nullable=True)  # 1-5
+    mood = Column(Integer, nullable=True)  # 1-5
+    notes = Column(String, nullable=True)
 
     task = relationship("Task", back_populates="schedule_entries")
 

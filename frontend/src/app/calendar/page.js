@@ -101,7 +101,17 @@ export default function CalendarPage() {
                             : "bg-accent/20 text-indigo-200"
                         }`}
                       >
-                        {session.title}
+                        <div className="font-medium">{session.title}</div>
+                        <div className="text-xs mt-0.5 opacity-75">
+                          {session.duration ? `${session.duration}m` : ""}
+                          {session.startTime ? ` · ${session.startTime}` : ""}
+                        </div>
+                        {(session.energy || session.distraction) && (
+                          <div className="text-xs mt-0.5 opacity-60">
+                            {session.energy && `⚡${session.energy}`}
+                            {session.distraction && ` 🎯${session.distraction}`}
+                          </div>
+                        )}
                       </div>
                     ))}
                     {sessionsForDay.length > 2 ? (

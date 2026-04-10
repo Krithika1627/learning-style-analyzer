@@ -68,6 +68,10 @@ function mapScheduleEntry(entry) {
     endTime,
     status: entry?.status || "pending",
     priority: entry?.priority || "medium",
+    energy: entry?.energy ?? null,
+    distraction: entry?.distraction ?? null,
+    mood: entry?.mood ?? null,
+    notes: entry?.notes ?? null,
   };
 }
 
@@ -276,16 +280,43 @@ export function AppProvider({ children }) {
   }, [fetchSchedule]);
 
   const addStudySession = useCallback(async (session) => {
-  if (!session?.title) return;
+    if (!session?.title) return;
 
-  const durationMinutes = Number(session.duration || 0);
-  const taskDate = session.date || new Date().toISOString().slice(0, 10);
+    setLoading(true);
+    setError(null);
 
-  // 🔥 SIMPLE NLP-FRIENDLY FORMAT
-  const taskText = `Study ${session.title} for ${durationMinutes} minutes on ${taskDate}`;
+    try {
+      const response = await fetch(`${API_BASE_URL}/sessions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: session.title,
+          duration: Number(session.duration || 0),
+          date: session.date || new Date().toISOString().slice(0, 10),
+          start_time: session.startTime || "09:00",
+          energy: session.energy || null,
+          distraction: session.distraction || null,
+          mood: session.mood || null,
+          notes: session.notes || null,
+        }),
+      });
 
-  await addTask(taskText, taskDate);
-}, [addTask]);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.detail || "Failed to add study session");
+      }
+
+      // Fetch updated schedule to show new session
+      await fetchSchedule(session.date);
+      return data;
+    } catch (err) {
+      setError(err.message || "Failed to add study session");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchSchedule]);
 
   const value = useMemo(
     () => ({

@@ -197,8 +197,15 @@ def get_weekly_schedule(db: Session, start_date: datetime):
             "task_name": e.task.name,
             "start_time": e.start_time,
             "end_time": e.end_time,
+            "date": e.start_time.isoformat().split("T")[0],
+            "startTime": e.start_time.isoformat().split("T")[1][:5] if "T" in e.start_time.isoformat() else None,
+            "duration": int((e.end_time - e.start_time).total_seconds() / 60) if e.end_time else 0,
             "priority": e.task.priority,
-            "status": e.status
+            "status": e.status,
+            "energy": e.energy,
+            "distraction": e.distraction,
+            "mood": e.mood,
+            "notes": e.notes
         }
         for e in entries
     ]
