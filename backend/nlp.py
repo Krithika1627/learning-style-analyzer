@@ -82,7 +82,7 @@ def parse_task_input(text: str):
 
         if parsed_at:
             start_time_limit = parsed_at
-            fixed_time = True   # 🔥 IMPORTANT
+            fixed_time = True  
 
     # ------------------------
     # 5. Extract Deadline
@@ -156,5 +156,5 @@ def parse_task_input(text: str):
         "duration": duration,
         "priority": priority,
         "difficulty": difficulty,
-        "fixed_time": fixed_time   # 🔥 KEY ADDITION
+        "fixed_time": fixed_time   
     }

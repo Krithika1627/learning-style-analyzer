@@ -100,7 +100,7 @@ def add_task(input: TaskInput, db: Session = Depends(get_db)):
     parsed = parse_task_input(input.text)
 
     if not parsed:
-        # 🔥 fallback (VERY IMPORTANT)
+        #fallback 
         parsed = {
             "name": input.text,
             "deadline": datetime.now() + timedelta(days=1),
