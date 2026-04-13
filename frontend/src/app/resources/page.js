@@ -14,7 +14,7 @@ const STYLE_ENDPOINTS = {
 };
 
 export default function ResourcesPage() {
-  // 🔥 LOCAL STORAGE STYLE
+  // LOCAL STORAGE STYLE
   const [style, setStyle] = useState(null);
 
   const [topic, setTopic] = useState("");
@@ -26,7 +26,7 @@ export default function ResourcesPage() {
   const [savedError, setSavedError] = useState("");
   const [selectedResource, setSelectedResource] = useState(null);
 
-  // 🔥 GET STYLE FROM LOCAL STORAGE
+  // GET STYLE FROM LOCAL STORAGE
   useEffect(() => {
     try {
       const stored = localStorage.getItem("vark_scores");

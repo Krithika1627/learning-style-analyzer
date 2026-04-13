@@ -13,12 +13,12 @@ export async function POST(req) {
       contents: `Explain ${topic} like a teacher speaking in a lecture. Keep it simple, clear words.`,
     });
 
-    console.log("Gemini Audio Response:", response); // 🔥 DEBUG
+    console.log("Gemini Audio Response:", response); // DEBUG
 
     return Response.json({ audioText: response.text });
 
   } catch (error) {
-    console.error("AUDIO ERROR FULL:", error); // 🔥 VERY IMPORTANT
+    console.error("AUDIO ERROR FULL:", error); 
     return Response.json(
       { audioText: "Error generating audio." },
       { status: 500 }

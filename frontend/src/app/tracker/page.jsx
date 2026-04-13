@@ -22,7 +22,7 @@ export default function TrackerPage() {
     fetchSchedule().catch(() => {});
   }, []);
 
-  // ✅ Sort sessions
+  // Sort sessions
   const sessions = useMemo(() => {
     return [...studySessions].sort((a, b) => {
       const left = a.startTime || a.date;
@@ -31,11 +31,11 @@ export default function TrackerPage() {
     });
   }, [studySessions]);
 
-  // ✅ FIXED SUBMIT (NO DUPLICATES)
+  // FIXED SUBMIT (NO DUPLICATES)
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    // 🚫 prevent spam / double execution
+    // prevent spam / double execution
     if (loading) return;
 
     if (!title.trim() || !duration || !date) return;
@@ -73,7 +73,7 @@ export default function TrackerPage() {
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
 
-        {/* 📝 FORM */}
+        {/* FORM */}
         <section className="rounded-2xl border border-border bg-card p-6 shadow-lg shadow-black/20">
           <h1 className="text-2xl font-semibold text-white">Study Tracker</h1>
           <p className="mt-2 text-slate-300">
@@ -134,7 +134,7 @@ export default function TrackerPage() {
           )}
         </section>
 
-        {/* 📋 LIST */}
+        {/* LIST */}
         <section className="rounded-2xl border border-border bg-card p-6 shadow-lg shadow-black/20">
           <h2 className="text-xl font-semibold text-white">
             Logged Sessions

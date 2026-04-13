@@ -9,7 +9,7 @@ export async function POST(req) {
     });
 
     const response = await ai.models.generateContent({
-      model: "gemini-flash-latest", // ✅ FAST MODEL
+      model: "gemini-flash-latest", 
       contents: `Generate short structured notes on ${topic}.`,
     });
 
